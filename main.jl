@@ -17,7 +17,7 @@ using Random
 
 include("objects.jl")
 include("functions.jl")
-
+import Distributions: sample
 # generate a model with five agents 
 # set theta paramter as slope for relationship between mean and variance of the gamma distributions
 # steeper theta means we get greater variance to get higher mean 
@@ -52,3 +52,6 @@ utilFunc=utilGen(tstMod)
 endowment=normMu
 
 # now, the agent observes prices for each security in terms of the consumption good which is the endowment/ numeraire.
+for t in 1:30
+    
+demandFunc(tstMod,sample(mod.allTokens,100),endowment::Set{Consumption} ,priceVec::Dictionary{Security,Rational{Int64}})

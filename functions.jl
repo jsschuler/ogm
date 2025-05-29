@@ -21,6 +21,9 @@ function genAgent(mod::Model)
     return newAgent
 end
 
+function genConsumption()
+    
+end
 # finally generate a model object. It has a key, a vector of securities, a vector of all tokens, and a vector of agents.
 
 function modelGen(key::String, agentCount::Int64, distList::Array{Distribution},tokenCount::Array{Int64})
@@ -156,8 +159,8 @@ function demandFunc(mod::Model,porfolio::Set{Token},endowment::Set{Consumption} 
 
         
     end
+end
 
-
-
-
+function sample(arg::Set,k::Int64)
+    return sample(collect(arg),k,replace=false)
 end
