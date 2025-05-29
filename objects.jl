@@ -2,7 +2,7 @@
 
 mutable struct Security
     idx::Int64
-    distribution::Distributions
+    distribution::Distribution
     tokenCount::Int64
 end
 
@@ -18,11 +18,13 @@ end
 
 struct agent
     idx::Int64
-    tokens::Vector{token}
-    consumption::Int64
+    tokens::Union{Vector{token},Nothing}
+    consumption::Union{Vector{consumption},Nothing}
 end
 
 mutable struct Model
     key::String
-
+    securities::Vector{Security}
+    allTokens::Vector{token}
+    agents::Vector{agent}
 end
