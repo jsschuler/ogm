@@ -57,11 +57,63 @@ function calcNormMu(mod::Model)
 end
 
 function calcNormPrecis(mod::Model)
-    # variances are additive but scalars require squaring
-    sigmaSum = 0.0
-    for sec in mod.securities
-        sigmaSum += var(sec.distribution) * (sec.tokenCount)^2
+    # now the agents are interested in the precision of their vector of future consumption. 
+    # this is tractable analytically, so we can just calculate it.
+    global independentDraws
+    global periods
+    if !independentDraws
+        # now we have period numbers of independent draws from the portfolio.
+        # as these are independent, the variance is additive. 
+        varianceVec=[]
+        for sec in mod.securities
+            push!(varianceVec,periods*var(sec.distribution))
+        end
+        # again variances are addive so 
+        totVar=sum(varianceVec)
+        # this is the variance of the portfolio over all future time periods.
+        # for further normalization, we multiply it by the number of tokens and divide by the number of agents.
+        # but since we are interested in the precision, we take the inverse of the variance.
+        return (length(mod.allTokens) * totVar) / length(mod.agents)
+    else
+        # if we have independent draws, we have to take into account that each agent draws independently.
+        # This obviates the need to normalize by the number of agents.
+        varianceVec=[]
+        for sec in mod.securities
+            push!(varianceVec,periods*length(mod.agtList)*var(sec.distribution))
+        end
+        totVar = sum(varianceVec)
+        # now we need only normalize by the number of tokens.
+        return length(mod.allTokens) / totVar
+    end     
+end
+
+# now we have normalization factors to calculate a utility function 
+# now our goal is to calculate a demand function where the consumption unit is the numeraire.
+# each token has a price in this numerarire. 
+# now, it is possible that there is not a unique maximum given each price vector.
+# But, we can determine this if the monte carlo optimization stabilizes.
+# given the use of Gamma distributions and the  fact that variance and expectation are linearly related, there should be a well-defined demand function.
+
+function utilGen(mod::Model)
+    # calculate the normalization factors
+    norm1=calcNormMu(mod::Model)
+    norm2=calcNormPrecis(mod::Model)
+
+    function util(consumption::Float64, expectedConsumption::Float64, precision::Float64)
+        # utility function is concave in consumption and linear in future consumption
+        return log(consumption / norm1) + log(futureConsumption / norm1) + log(precision / norm2)
     end
-    # return reciprocal as this is the precision  
-    return (length(mod.agents)^2) / sigmaSum  
+    return util
+end
+
+# given a price vector, calculate demand for each security 
+function demandFunc(mod::Model,porfolio::Set{Tokens},endowment::Set{consumption} ,priceVec::Vector{Float64})
+    # this function calculates the demand for each security given a price vector.
+    # we assume that the price vector is in terms of the numeraire.
+    # we also assume that the utility function is concave in consumption and linear in future consumption.
+    # we will use a monte carlo optimization to find the demand function.
+    util = utilGen(mod)
+    
+
+
 end

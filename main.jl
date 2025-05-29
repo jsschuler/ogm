@@ -44,3 +44,11 @@ normMu=calcNormMu(tstMod)
 println("Normalization factor for mean: ", normMu)
 normPrecis=calcNormPrecis(tstMod)
 println("Normalization factor for precision: ", normPrecis)
+
+# now, let's test a utility 
+utilFunc=utilGen(tstMod)
+# now, set an endowment. We can use the expected value of the portfolio per agent  
+# which is actually the normalization factor for the mean.
+endowment=normMu
+
+# now, the agent observes prices for each security in terms of the consumption good which is the endowment/ numeraire.
