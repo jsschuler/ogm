@@ -9,14 +9,14 @@ end
 # this function generates a token for a security. It increments the token count for the security and returns a new token object.
 function genToken(mod::Model, security::Security)
     security.tokenCount += 1
-    tok=token(security.tokenCount, security)
+    tok=Token(security.tokenCount, security)
     return tok
 end
 
 # generate an agent object. It has no tokens or consumption at the beginning.
 
 function genAgent(mod::Model)
-    newAgent = agent(length(mod.agents) + 1, nothing, nothing)
+    newAgent = Agent(length(mod.agents) + 1, nothing, nothing)
     push!(mod.agents, newAgent)
     return newAgent
 end
@@ -24,7 +24,7 @@ end
 # finally generate a model object. It has a key, a vector of securities, a vector of all tokens, and a vector of agents.
 
 function modelGen(key::String, agentCount::Int64, distList::Array{Distribution},tokenCount::Array{Int64})
-    mod=Model(key, Security[], token[],agent[])
+    mod=Model(key, Set{Security}(), Set{Token}(),Agent[])
     for j in 1:length(distList)
         currSec=genSecurity(mod, distList[j])
         for i in 1:tokenCount[j]
@@ -107,13 +107,13 @@ function utilGen(mod::Model)
 end
 
 # given a price vector, calculate demand for each security 
-function demandFunc(mod::Model,porfolio::Set{Tokens},endowment::Set{consumption} ,priceVec::Vector{Float64})
+function demandFunc(mod::Model,porfolio::Set{Token},endowment::Set{Consumption} ,priceVec::Vector{Float64})
     # this function calculates the demand for each security given a price vector.
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.
     # we will use a monte carlo optimization to find the demand function.
     util = utilGen(mod)
-    
+
 
 
 end

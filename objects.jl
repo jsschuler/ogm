@@ -6,25 +6,25 @@ mutable struct Security
     tokenCount::Int64
 end
 
-struct token
+struct Token
     idx::Int64
     security::Security
 end
 
 
-struct consumption
+struct Consumption
     idx::Int64
 end
 
-struct agent
+struct Agent
     idx::Int64
-    tokens::Union{Vector{token},Nothing}
-    consumption::Union{Vector{consumption},Nothing}
+    tokens::Union{Set{Token},Nothing}
+    consumption::Union{Set{Consumption},Nothing}
 end
 
 mutable struct Model
     key::String
-    securities::Vector{Security}
-    allTokens::Vector{token}
-    agents::Vector{agent}
+    securities::Set{Security}
+    allTokens::Set{Token}
+    agents::Vector{Agent}
 end
