@@ -107,12 +107,56 @@ function utilGen(mod::Model)
 end
 
 # given a price vector, calculate demand for each security 
-function demandFunc(mod::Model,porfolio::Set{Token},endowment::Set{Consumption} ,priceVec::Vector{Float64})
+function demandFunc(mod::Model,porfolio::Set{Token},endowment::Set{Consumption} ,priceVec::Dictionary{Security,Rational{Int64}})
     # this function calculates the demand for each security given a price vector.
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.
     # we will use a monte carlo optimization to find the demand function.
     util = utilGen(mod)
+    # now calculate the budget from the price vector
+    budget=0//1
+    for tok in portfolio
+        budget=budget+priceVec[tok.security]
+    end
+    # now add all the consumption objects
+    budget=budget+length(endowment)
+    # Now, the trick is to sell securities for consumption tokens and buy them also this way. 
+    # Thus, we have k buckets where there are k-1 securities and also the consumption token category
+    # now, we have calculated 
+    securityCats=length(priceVec.keys())
+    # now go until a trade fails for 1000 consecutive steps
+    # we randomly divide the budget and for each security, 
+    # round that budget category to the greatest rational number with the
+    # security price in its denominator
+    # allocate this budget to this particular security
+    # any remainders are allocated to consumption tokens
+    tradeFail=0
+    U=Uniform(0,1)
+    for jj in 1:1
+    #while tradeFail < 1000
+        allocations=Int64[]
+        rawVec=diff(cat([0.0],sort(rand(U,securityCats)),[1.0],dims=1))
+        for j in 1:(length(rawVec)-1)
+            ratEl=rationalize(rawVec[j])
+            # and the price is
+            currPrice=priceVec[priceVec.keys()[j]]
+            # now, find the greatest integer that, when multiplied by the price is less than this float.
+            t=0
+            while t * currPrice < rawVec
+                t=t+1
+            end
+            push!(allocations,t)
+        end
+        # now calcuate left over budget for consumption
+        priceMult=Rational{Int64}[]
+        for el in priceVec.keys()
+            push!(priceMult,priceVec[el])
+        end
+        totSpent=sum(priceMult.*allocations)
+
+        
+    end
+
 
 
 
