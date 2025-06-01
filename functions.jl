@@ -22,7 +22,7 @@ function genAgent(mod::Model)
 end
 
 function genConsumption()
-    
+
 end
 # finally generate a model object. It has a key, a vector of securities, a vector of all tokens, and a vector of agents.
 
@@ -93,9 +93,17 @@ end
 # now we have normalization factors to calculate a utility function 
 # now our goal is to calculate a demand function where the consumption unit is the numeraire.
 # each token has a price in this numerarire. 
-# now, it is possible that there is not a unique maximum given each price vector.
-# But, we can determine this if the monte carlo optimization stabilizes.
-# given the use of Gamma distributions and the  fact that variance and expectation are linearly related, there should be a well-defined demand function.
+
+# we need a few helper functions first
+
+function expectation(tok::token)
+    denom=tok.security.tokenCount
+    mu=mean(tok.security)
+    return mu/denom
+end
+
+function 
+
 
 function utilGen(mod::Model)
     # calculate the normalization factors
@@ -104,61 +112,44 @@ function utilGen(mod::Model)
 
     function util(consumption::Float64, expectedConsumption::Float64, precision::Float64)
         # utility function is concave in consumption and linear in future consumption
-        return log(consumption / norm1) + log(futureConsumption / norm1) + log(precision / norm2)
+        return log((1+consumption) / norm1) + log((1+expectedConsumption) / norm1) + log(precision / norm2)
     end
     return util
+    function 
 end
 
+# we need the cloning functions
+
+function clone(tok::Token)
+    return SimToken(tok.idx,tok.security)
+end
+
+function clone(cons::consumption)
+    return SimConsumption(cons.idx)
+end
+
+
 # given a price vector, calculate demand for each security 
-function demandFunc(mod::Model,porfolio::Set{Token},endowment::Set{Consumption} ,priceVec::Dictionary{Security,Rational{Int64}})
+function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Rational{Int64}})
     # this function calculates the demand for each security given a price vector.
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.
     # we will use a monte carlo optimization to find the demand function.
     util = utilGen(mod)
     # now calculate the budget from the price vector
-    budget=0//1
-    for tok in portfolio
-        budget=budget+priceVec[tok.security]
+    budget::Int64=0
+    for tok in agt.tokens
+        if typeof(tok)==Consumption
+            budget=budget + 1
+        else
+            budget=budget+priceVec[tok]
+        end
     end
-    # now add all the consumption objects
-    budget=budget+length(endowment)
-    # Now, the trick is to sell securities for consumption tokens and buy them also this way. 
-    # Thus, we have k buckets where there are k-1 securities and also the consumption token category
-    # now, we have calculated 
-    securityCats=length(priceVec.keys())
-    # now go until a trade fails for 1000 consecutive steps
-    # we randomly divide the budget and for each security, 
-    # round that budget category to the greatest rational number with the
-    # security price in its denominator
-    # allocate this budget to this particular security
-    # any remainders are allocated to consumption tokens
-    tradeFail=0
-    U=Uniform(0,1)
-    for jj in 1:1
-    #while tradeFail < 1000
-        allocations=Int64[]
-        rawVec=diff(cat([0.0],sort(rand(U,securityCats)),[1.0],dims=1))
-        for j in 1:(length(rawVec)-1)
-            ratEl=rationalize(rawVec[j])
-            # and the price is
-            currPrice=priceVec[priceVec.keys()[j]]
-            # now, find the greatest integer that, when multiplied by the price is less than this float.
-            t=0
-            while t * currPrice < rawVec
-                t=t+1
-            end
-            push!(allocations,t)
-        end
-        # now calcuate left over budget for consumption
-        priceMult=Rational{Int64}[]
-        for el in priceVec.keys()
-            push!(priceMult,priceVec[el])
-        end
-        totSpent=sum(priceMult.*allocations)
+    # now, we move consumption to the highest marginal utility token step by step 
+    # until utility stops rising
+    
+    while true
 
-        
-    end
 end
 
 function sample(arg::Set,k::Int64)
