@@ -102,7 +102,7 @@ function expectation(tok::token)
     return mu/denom
 end
 
-function 
+
 
 
 function utilGen(mod::Model)
@@ -115,7 +115,75 @@ function utilGen(mod::Model)
         return log((1+consumption) / norm1) + log((1+expectedConsumption) / norm1) + log(precision / norm2)
     end
     return util
-    function 
+    function tokenConsumption(tokenSet::Set{Tradable})
+        consCount::Int64=0
+        for tok in tokenSet
+            if typeof(tok)==Consumption
+                consCount=consCount+1
+            end
+        end
+        return conCount
+    end
+    function tokenExpectation(tokenSet::Set{Tradable})
+        mu::Float64=0.0
+        for tok in tokenSet
+            if typeof(tok) != Consumption
+                mu=mu+mean(tok.security)
+            end
+        end
+        return mu
+    end
+    function tokenPrecision(tokenSet::Set{Tradable})
+        variance::Float64=0.0
+        for tok in tokenSet
+            if typeof(tok) != Consumption
+                variance=variance+var(tok)
+            end
+        end
+        return 1/variance
+    end
+
+    function utility(tokenSet::Set{Tradable})
+        return util(tokenConsumption(tokenSet),
+                    tokenExpectation(tokenSet),
+                    tokenPrecision(tokenSet))
+
+    end
+    # Now we need the simulation versions
+    function tokenConsumption(tokenSet::Set{SimCoin})
+        consCount::Int64=0
+        for tok in tokenSet
+            if typeof(tok)==SimConsumption
+                consCount=consCount+1
+            end
+        end
+        return conCount
+    end
+    function tokenExpectation(tokenSet::Set{SimCoin})
+        mu::Float64=0.0
+        for tok in tokenSet
+            if typeof(tok) != SimConsumption
+                mu=mu+mean(tok.security)
+            end
+        end
+        return mu
+    end
+    function tokenPrecision(tokenSet::Set{SimCoin})
+        variance::Float64=0.0
+        for tok in tokenSet
+            if typeof(tok) != SimConsumption
+                variance=variance+var(tok)
+            end
+        end
+        return 1/variance
+    end
+
+    function utility(tokenSet::Set{SimCoin})
+        return util(tokenConsumption(tokenSet),
+                    tokenExpectation(tokenSet),
+                    tokenPrecision(tokenSet))
+
+    end
 end
 
 # we need the cloning functions
