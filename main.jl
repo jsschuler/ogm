@@ -51,8 +51,8 @@ utilFunc=utilGen(tstMod)
 # which is actually the normalization factor for the mean.
 endowment=normMu
 # divide the endowments randomly and evenly among agents
-agt=mod.agtList[1]
-agt.tokens=set(sample(collect(mod.tokenSet),floor(Int64,length(mod.tokenSet)/agentCount),replace=false))
+agt=tstMod.agents[1]
+agt.tokens=Set(sample(collect(tstMod.allTradeables),floor(Int64,length(tstMod.allTradeables)/agentCount),replace=false))
 
 
 #demandFunc(tstMod,agt,)

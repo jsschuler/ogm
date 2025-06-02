@@ -16,7 +16,7 @@ end
 # generate an agent object. It has no tokens or consumption at the beginning.
 
 function genAgent(mod::Model)
-    newAgent = Agent(length(mod.agents) + 1, nothing, nothing)
+    newAgent = Agent(length(mod.agents) + 1, nothing)
     push!(mod.agents, newAgent)
     return newAgent
 end
@@ -27,11 +27,11 @@ end
 # finally generate a model object. It has a key, a vector of securities, a vector of all tokens, and a vector of agents.
 
 function modelGen(key::String, agentCount::Int64, distList::Array{Distribution},tokenCount::Array{Int64})
-    mod=Model(key, Set{Security}(), Set{Token}(),Agent[])
+    mod=Model(key, Set{Security}(), Set{Tradeable}(),Agent[])
     for j in 1:length(distList)
         currSec=genSecurity(mod, distList[j])
         for i in 1:tokenCount[j]
-            push!(mod.allTokens,genToken(mod, currSec))
+            push!(mod.allTradeables,genToken(mod, currSec))
         end
     end
     for i in 1:agentCount
@@ -62,32 +62,22 @@ end
 function calcNormPrecis(mod::Model)
     # now the agents are interested in the precision of their vector of future consumption. 
     # this is tractable analytically, so we can just calculate it.
-    global independentDraws
     global periods
-    if !independentDraws
-        # now we have period numbers of independent draws from the portfolio.
-        # as these are independent, the variance is additive. 
-        varianceVec=[]
-        for sec in mod.securities
-            push!(varianceVec,periods*var(sec.distribution))
-        end
-        # again variances are addive so 
-        totVar=sum(varianceVec)
-        # this is the variance of the portfolio over all future time periods.
-        # for further normalization, we multiply it by the number of tokens and divide by the number of agents.
-        # but since we are interested in the precision, we take the inverse of the variance.
-        return (length(mod.allTokens) * totVar) / length(mod.agents)
-    else
-        # if we have independent draws, we have to take into account that each agent draws independently.
-        # This obviates the need to normalize by the number of agents.
-        varianceVec=[]
-        for sec in mod.securities
-            push!(varianceVec,periods*length(mod.agtList)*var(sec.distribution))
-        end
-        totVar = sum(varianceVec)
-        # now we need only normalize by the number of tokens.
-        return length(mod.allTokens) / totVar
-    end     
+
+    # now we have period numbers of independent draws from the portfolio.
+    # as these are independent, the variance is additive. 
+    varianceVec=[]
+    for sec in mod.securities
+        push!(varianceVec,sec.tokenCount*periods*var(sec.distribution))
+    end
+    # again variances are addive so 
+    totVar=sum(varianceVec)
+    # this is the variance of the portfolio over all future time periods.
+    # for further normalization, we multiply it by the number of tokens and divide by the number of agents.
+    # but since we are interested in the precision, we take the inverse of the variance.
+
+    return length(mod.agents)/ totVar 
+  
 end
 
 # now we have normalization factors to calculate a utility function 
@@ -115,7 +105,7 @@ function utilGen(mod::Model)
         return log((1+consumption) / norm1) + log((1+expectedConsumption) / norm1) + log(precision / norm2)
     end
     return util
-    function tokenConsumption(tokenSet::Set{Tradable})
+    function tokenConsumption(tokenSet::Set{Tradeable})
         consCount::Int64=0
         for tok in tokenSet
             if typeof(tok)==Consumption
@@ -124,7 +114,7 @@ function utilGen(mod::Model)
         end
         return conCount
     end
-    function tokenExpectation(tokenSet::Set{Tradable})
+    function tokenExpectation(tokenSet::Set{Tradeable})
         mu::Float64=0.0
         for tok in tokenSet
             if typeof(tok) != Consumption
@@ -133,7 +123,7 @@ function utilGen(mod::Model)
         end
         return mu
     end
-    function tokenPrecision(tokenSet::Set{Tradable})
+    function tokenPrecision(tokenSet::Set{Tradeable})
         variance::Float64=0.0
         for tok in tokenSet
             if typeof(tok) != Consumption
@@ -143,7 +133,7 @@ function utilGen(mod::Model)
         return 1/variance
     end
 
-    function utility(tokenSet::Set{Tradable})
+    function utility(tokenSet::Set{Tradeable})
         return util(tokenConsumption(tokenSet),
                     tokenExpectation(tokenSet),
                     tokenPrecision(tokenSet))
@@ -205,7 +195,7 @@ function clone(cons::SimConsumption)
     return SimConsumption(cons.idx)
 end
 
-function clone(tokenSet::Set{Tradable})
+function clone(tokenSet::Set{Tradeable})
     return Set(clone.(tokenSet))
 end
 
@@ -236,7 +226,7 @@ function addToken(tokenSet::Set{SimCoin},security::Security)
     return tokenSet
 end
 # given a price vector, calculate demand for each security 
-function demandFunc(mod::Model,agt::Agent,priceVec::Dictionary{Security,Int64})
+function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
     # this function calculates the demand for each security given a price vector.
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.

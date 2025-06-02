@@ -6,26 +6,26 @@ mutable struct Security
     tokenCount::Int64
 end
 
-abstract type Tradable end
+abstract type Tradeable end
 
-struct Token <: Tradable
+struct Token <: Tradeable
     idx::Int64
     security::Security
 end
 
-struct Consumption <: Tradable
+struct Consumption <: Tradeable
     idx::Int64
 end
 
-struct Agent
+mutable struct Agent
     idx::Int64
-    tokens::Union{Set{Tradable},Nothing}
+    tokens::Union{Set{Tradeable},Nothing}
 end
 
 mutable struct Model
     key::String
     securities::Set{Security}
-    allTradeables::Set{Tradable}
+    allTradeables::Set{Tradeable}
     agents::Vector{Agent}
 end
 
