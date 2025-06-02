@@ -96,7 +96,7 @@ end
 
 # we need a few helper functions first
 
-function expectation(tok::token)
+function expectation(tok::Token)
     denom=tok.security.tokenCount
     mu=mean(tok.security)
     return mu/denom
@@ -226,12 +226,17 @@ function removeConsumption(k::Int64,tokenSet::Set{SimCoin})
     return setdiff(tokenSet,deletionSet)
 end
 
-function addToken(tokenSet::Set{SimCoin},token::SimToken)
-    push!(tokenSet,token)
+function addToken(tokenSet::Set{SimCoin},security::Security)
+    typeCnt::Int64=0
+    for tok in filter(x-> x.tok==security,collect(tokenSet))
+        typeCnt=typCnt+1
+    end
+    
+    push!(tokenSet,Token(typeCnt,security))
     return tokenSet
 end
 # given a price vector, calculate demand for each security 
-function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Int64})
+function demandFunc(mod::Model,agt::Agent,priceVec::Dictionary{Security,Int64})
     # this function calculates the demand for each security given a price vector.
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.
@@ -264,7 +269,7 @@ function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Int64})
             if budget >= priceVec[sec]
                 currTokenSet=clone(tempTokenSet)
                 currTokenSet=removeConsumption(priceVec[sec],currTokenSet)
-                currTokenSet=addToken(currTokenSet,SimToken(0,sec))
+                currTokenSet=addToken(currTokenSet,sec)
                 # now, calculate the utility of the new token set
                 newU=util(currTokenSet)
                 # now, we replace the best Security and the best new Util only if they are both
@@ -282,7 +287,7 @@ function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Int64})
 
         # now that we have the highest marginal utility security, actually change the agent's token set
         tempTokenSet=removeConsumption(priceVec[bestSecurity],tempTokenSet)
-        tempTokenSet=addToken(tempTokenSet,SimToken(0,bestSecurity))
+        tempTokenSet=addToken(tempTokenSet,bestSecurity)
         budget=budget-priceVec[bestSecurity]
         # now if the budget is less than the price of any security, halt the loop
         allPrices=Int64[]

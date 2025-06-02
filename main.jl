@@ -50,6 +50,9 @@ utilFunc=utilGen(tstMod)
 # now, set an endowment. We can use the expected value of the portfolio per agent  
 # which is actually the normalization factor for the mean.
 endowment=normMu
+# divide the endowments randomly and evenly among agents
+agt=mod.agtList[1]
+agt.tokens=set(sample(collect(mod.tokenSet),floor(Int64,length(mod.tokenSet)/agentCount),replace=false))
 
 
-demandFunc(tstMod,sample(mod.allTokens,100),endowment::Set{Consumption} ,priceVec::Dictionary{Security,Rational{Int64}})
+#demandFunc(tstMod,agt,)
