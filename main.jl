@@ -54,5 +54,11 @@ endowment=normMu
 agt=tstMod.agents[1]
 agt.tokens=Set(sample(collect(tstMod.allTradeables),floor(Int64,length(tstMod.allTradeables)/agentCount),replace=false))
 
+println(agt.tokens)
+priceDict::Dict{Security,Int64}=Dict{Security,Int64}()
+for sec in tstMod.securities
+    priceDict[sec]=sample(collect(1:50),1)[1]
+end
 
-#demandFunc(tstMod,agt,)
+demanded=demandFunc(tstMod,agt,priceDict)
+println(demanded)

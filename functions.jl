@@ -104,7 +104,6 @@ function utilGen(mod::Model)
         # utility function is concave in consumption and linear in future consumption
         return log((1+consumption) / norm1) + log((1+expectedConsumption) / norm1) + log(precision / norm2)
     end
-    return util
     function tokenConsumption(tokenSet::Set{Tradeable})
         consCount::Int64=0
         for tok in tokenSet
@@ -147,7 +146,7 @@ function utilGen(mod::Model)
                 consCount=consCount+1
             end
         end
-        return conCount
+        return consCount
     end
     function tokenExpectation(tokenSet::Set{SimCoin})
         mu::Float64=0.0
@@ -168,13 +167,13 @@ function utilGen(mod::Model)
         return 1/variance
     end
 
-    function utility(tokenSet::Set{SimCoin})
-        return util(tokenConsumption(tokenSet),
-                    tokenExpectation(tokenSet),
-                    tokenPrecision(tokenSet))
+    function finUtility(tokenSet::Set{SimCoin})
+        return util(tokenConsumption(tokenSet)/norm1,
+                    tokenExpectation(tokenSet)/norm1,
+                    tokenPrecision(tokenSet)/norm2)
 
     end
-    return utility
+    return finUtility
 end
 
 # we need the cloning functions
@@ -206,7 +205,7 @@ end
 # now we need a function to remove k consumption tokens
 function removeConsumption(k::Int64,tokenSet::Set{SimCoin})
     n=0
-    deletionSet::Set{SimCoin}()
+    deletionSet::Set{SimCoin}=Set{SimCoin}()
     for tok in tokenSet
         if typeof(tok)==Consumption && n < k
             push!(deletionSet,tok)
@@ -216,7 +215,52 @@ function removeConsumption(k::Int64,tokenSet::Set{SimCoin})
     return setdiff(tokenSet,deletionSet)
 end
 
+function removeConsumption(k::Int64,tokenSet::Set{SimConsumption})
+    n=0
+    deletionSet::Set{SimCoin}=Set{SimCoin}()
+    for tok in tokenSet
+        if typeof(tok)==Consumption && n < k
+            push!(deletionSet,tok)
+            n=n+1
+        end
+    end
+    return setdiff(tokenSet,deletionSet)
+end
+
+function removeConsumption(k::Int64,tokenSet::Set{SimToken})
+    n=0
+    deletionSet::Set{SimCoin}=Set{SimCoin}()
+    for tok in tokenSet
+        if typeof(tok)==Consumption && n < k
+            push!(deletionSet,tok)
+            n=n+1
+        end
+    end
+    return setdiff(tokenSet,deletionSet)
+end
+
+
 function addToken(tokenSet::Set{SimCoin},security::Security)
+    typeCnt::Int64=0
+    for tok in filter(x-> x.tok==security,collect(tokenSet))
+        typeCnt=typCnt+1
+    end
+    
+    push!(tokenSet,Token(typeCnt,security))
+    return tokenSet
+end
+
+function addToken(tokenSet::Set{SimConsumption},security::Security)
+    typeCnt::Int64=0
+    for tok in filter(x-> x.tok==security,collect(tokenSet))
+        typeCnt=typCnt+1
+    end
+    
+    push!(tokenSet,Token(typeCnt,security))
+    return tokenSet
+end
+
+function addToken(tokenSet::Set{SimToken},security::Security)
     typeCnt::Int64=0
     for tok in filter(x-> x.tok==security,collect(tokenSet))
         typeCnt=typCnt+1
@@ -231,14 +275,14 @@ function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.
     # we will use a monte carlo optimization to find the demand function.
-    util = utilGen(mod)
+    utilFunc = utilGen(mod)
     # now calculate the budget from the price vector
     budget::Int64=0
     for tok in agt.tokens
         if typeof(tok)==Consumption
             budget=budget + 1
         else
-            budget=budget+priceVec[tok]
+            budget=budget+priceVec[tok.security]
         end
     end
     # now, we move consumption to the highest marginal utility token step by step 
@@ -250,7 +294,7 @@ function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
     better=true
     while better
         # get  current utility
-        currUtil=util(tempTokenSet)
+        currUtil=utilFunc(tempTokenSet)
         # now, loop over the securities we could buy
         bestSecurity::Union{Security,Nothing}=nothing
         bestNewUtil=-Inf
@@ -261,7 +305,7 @@ function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
                 currTokenSet=removeConsumption(priceVec[sec],currTokenSet)
                 currTokenSet=addToken(currTokenSet,sec)
                 # now, calculate the utility of the new token set
-                newU=util(currTokenSet)
+                newU=utilFunc(currTokenSet)
                 # now, we replace the best Security and the best new Util only if they are both
                 # better than new U and better than the old
                 if newU > currUtil 
