@@ -184,6 +184,7 @@ function utilGen(mod::Model)
                     tokenPrecision(tokenSet))
 
     end
+    return utility
 end
 
 # we need the cloning functions
@@ -192,13 +193,45 @@ function clone(tok::Token)
     return SimToken(tok.idx,tok.security)
 end
 
-function clone(cons::consumption)
+function clone(cons::Consumption)
     return SimConsumption(cons.idx)
 end
 
+function clone(tok::SimToken)
+    return SimToken(tok.idx,tok.security)
+end
 
+function clone(cons::SimConsumption)
+    return SimConsumption(cons.idx)
+end
+
+function clone(tokenSet::Set{Tradable})
+    return Set(clone.(tokenSet))
+end
+
+function clone(tokenSet::Set{SimCoin})
+    return Set(clone.(tokenSet))
+end
+
+# now we need a function to remove k consumption tokens
+function removeConsumption(k::Int64,tokenSet::Set{SimCoin})
+    n=0
+    deletionSet::Set{SimCoin}()
+    for tok in tokenSet
+        if typeof(tok)==Consumption && n < k
+            push!(deletionSet,tok)
+            n=n+1
+        end
+    end
+    return setdiff(tokenSet,deletionSet)
+end
+
+function addToken(tokenSet::Set{SimCoin},token::SimToken)
+    push!(tokenSet,token)
+    return tokenSet
+end
 # given a price vector, calculate demand for each security 
-function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Rational{Int64}})
+function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Int64})
     # this function calculates the demand for each security given a price vector.
     # we assume that the price vector is in terms of the numeraire.
     # we also assume that the utility function is concave in consumption and linear in future consumption.
@@ -215,11 +248,51 @@ function demandFunc(mod::Model,agt::agent,priceVec::Dictionary{Security,Rational
     end
     # now, we move consumption to the highest marginal utility token step by step 
     # until utility stops rising
-    
-    while true
+    tempTokenSet=Set{SimCoin}()
+    for k in 1:budget
+        push!(tempTokenSet,SimConsumption(k))
+    end
+    better=true
+    while better
+        # get  current utility
+        currUtil=util(tempTokenSet)
+        # now, loop over the securities we could buy
+        bestSecurity::Union{Security,Nothing}=nothing
+        bestNewUtil=-Inf
+        for sec in mod.securities
+            # Can we afford one token?
+            if budget >= priceVec[sec]
+                currTokenSet=clone(tempTokenSet)
+                currTokenSet=removeConsumption(priceVec[sec],currTokenSet)
+                currTokenSet=addToken(currTokenSet,SimToken(0,sec))
+                # now, calculate the utility of the new token set
+                newU=util(currTokenSet)
+                # now, we replace the best Security and the best new Util only if they are both
+                # better than new U and better than the old
+                if newU > currUtil 
+                    bestNewUtil=newU
+                    bestSecurity=sec
+                end
+            end
+        end
+        # now, if the best utility trade is lower utility than the current, halt the loop
+        if bestNewUtil < currUtil
+            better=false
+        end
 
-end
-
-function sample(arg::Set,k::Int64)
-    return sample(collect(arg),k,replace=false)
+        # now that we have the highest marginal utility security, actually change the agent's token set
+        tempTokenSet=removeConsumption(priceVec[bestSecurity],tempTokenSet)
+        tempTokenSet=addToken(tempTokenSet,SimToken(0,bestSecurity))
+        budget=budget-priceVec[bestSecurity]
+        # now if the budget is less than the price of any security, halt the loop
+        allPrices=Int64[]
+        for sec in priceVec.keys()
+            push!(allPrices,priceVec[sec])
+        end
+        if minimum(allPrices) > budget
+            better=false
+        end
+    end
+    # now return the demanded token set
+    return tempTokenSet
 end

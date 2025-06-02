@@ -51,7 +51,5 @@ utilFunc=utilGen(tstMod)
 # which is actually the normalization factor for the mean.
 endowment=normMu
 
-# now, the agent observes prices for each security in terms of the consumption good which is the endowment/ numeraire.
-for t in 1:30
-    
+
 demandFunc(tstMod,sample(mod.allTokens,100),endowment::Set{Consumption} ,priceVec::Dictionary{Security,Rational{Int64}})
