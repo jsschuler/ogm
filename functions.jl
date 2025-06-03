@@ -168,6 +168,10 @@ function utilGen(mod::Model)
     end
 
     function finUtility(tokenSet::Set{SimCoin})
+        println("Utility Components")
+        println(tokenConsumption(tokenSet))
+        println(tokenExpectation(tokenSet))
+        println(tokenPrecision(tokenSet))
         return util(tokenConsumption(tokenSet)/norm1,
                     tokenExpectation(tokenSet)/norm1,
                     tokenPrecision(tokenSet)/norm2)
