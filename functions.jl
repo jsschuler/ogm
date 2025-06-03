@@ -129,7 +129,11 @@ function utilGen(mod::Model)
                 variance=variance+var(tok)
             end
         end
-        return 1/variance
+        if variance ==0.0
+            return -Inf
+        else
+            return 1/variance
+        end
     end
 
     function utility(tokenSet::Set{Tradeable})
@@ -164,7 +168,11 @@ function utilGen(mod::Model)
                 variance=variance+var(tok.security.distribution)
             end
         end
-        return 1/variance
+        if variance ==0.0
+            return -Inf
+        else
+            return 1/variance
+        end
     end
 
     function finUtility(tokenSet::Set{SimCoin})
@@ -172,12 +180,22 @@ function utilGen(mod::Model)
         println(tokenConsumption(tokenSet))
         println(tokenExpectation(tokenSet))
         println(tokenPrecision(tokenSet))
-        return util(tokenConsumption(tokenSet)/norm1,
+        cons=tokenConsumption(tokenSet)
+        exp=tokenExpectation(tokenSet)
+        precis=tokenPrecision(tokenSet)
+
+        if cons <= 0.0
+            return -Inf
+        elseif exp <= 0.0
+            return -Inf
+        elseif precis <= 0.0
+            return -Inf
+        else return util(tokenConsumption(tokenSet)/norm1,
                     tokenExpectation(tokenSet)/norm1,
                     tokenPrecision(tokenSet)/norm2)
-
+        end
     end
-    return finUtility
+    
 end
 
 # we need the cloning functions
@@ -317,8 +335,11 @@ function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
                 # now, we replace the best Security and the best new Util only if they are both
                 # better than new U and better than the old
                 if newU > currUtil 
+                    println("Switching")
                     bestNewUtil=newU
                     bestSecurity=sec
+                    println("Best Security")
+                    println(bestSecurity)
                 end
             end
         end
@@ -326,14 +347,18 @@ function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
         if bestNewUtil < currUtil
             better=false
         end
-
-        # now that we have the highest marginal utility security, actually change the agent's token set
-        tempTokenSet=removeConsumption(priceVec[bestSecurity],tempTokenSet)
-        tempTokenSet=addToken(tempTokenSet,bestSecurity)
-        budget=budget-priceVec[bestSecurity]
+        if better
+            # now that we have the highest marginal utility security, actually change the agent's token set
+            tempTokenSet=removeConsumption(priceVec[bestSecurity],tempTokenSet)
+            tempTokenSet=addToken(tempTokenSet,bestSecurity)
+            budget=budget-priceVec[bestSecurity]
+        end
         # now if the budget is less than the price of any security, halt the loop
         allPrices=Int64[]
-        for sec in priceVec.keys()
+        println(priceVec)
+        println(typeof(priceVec))
+        for sec in keys(priceVec)
+            println(sec)
             push!(allPrices,priceVec[sec])
         end
         if minimum(allPrices) > budget
@@ -342,4 +367,17 @@ function demandFunc(mod::Model,agt::Agent,priceVec::Dict{Security,Int64})
     end
     # now return the demanded token set
     return tempTokenSet
+end
+
+# we need a reporting function
+function report(x::SimConsumption)
+    return typeof(x)
+end
+
+function report(x::SimToken)
+    return (mean(x.security.distribution),var(x.security.distribution))
+end
+
+function report(x::Set)
+    return(countmap(report.(collect(x))))
 end

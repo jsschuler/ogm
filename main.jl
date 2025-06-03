@@ -7,7 +7,7 @@
 
 using Distributions 
 using Random
-
+using StatsBase
 # now, this is an overlapping generations model
 # agents live for 50 periods
 # there are three arguments to the agent's utility function:
@@ -57,8 +57,8 @@ agt.tokens=Set(sample(collect(tstMod.allTradeables),floor(Int64,length(tstMod.al
 println(agt.tokens)
 priceDict::Dict{Security,Int64}=Dict{Security,Int64}()
 for sec in tstMod.securities
-    priceDict[sec]=sample(collect(1:50),1)[1]
+    priceDict[sec]=sample(collect(1:500),1)[1]
 end
-
+println(priceDict)
 demanded=demandFunc(tstMod,agt,priceDict)
-println(demanded)
+println(report(demanded))
