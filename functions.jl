@@ -40,45 +40,17 @@ function modelGen(key::String, agentCount::Int64, distList::Array{Distribution},
     return mod
 end 
 
-# now, let's write functions that simulate the entire portfolio of securities for the whole model.
-# the expected mean of mean of the portfolio in each time period times the number of tokens and divided by the number of agents 
-# is the normalizaton factor we use for both consumption and the expected future consumption in each time period. 
-# Recall that these are independent. 
-# we also simulate the distribution of the portfolio over all future time periods times the number of tokens and divided by the number of agents.
-# now we want two versions of this. In one version, the actual payout from a token in each period is the same  
-# in the other, the payout of each token is an independent draw from the distribution of the portfolio.
-# in the former case, the model can be interpreted as a representative agent model.
+# now, we will discuss the utility function
+# The form of our utility function is as follows:
+# U= GM(C_t) * AM(C_t) * Δ(C_t)
+# where GM and AM are the geometric and arithmetic means respectively
+# and Δ is the GM(CM(C_t)/AM(C_t))
+# for now, assume identical preferences
 
-# calculate normalization factors 
-
-function calcNormMu(mod::Model)
-    muSum = 0.0
-    for sec in mod.securities
-        muSum += mean(sec.distribution) * sec.tokenCount
-    end
-    return muSum / length(mod.agents)
+function utility()
+    
 end
 
-function calcNormPrecis(mod::Model)
-    # now the agents are interested in the precision of their vector of future consumption. 
-    # this is tractable analytically, so we can just calculate it.
-    global periods
-
-    # now we have period numbers of independent draws from the portfolio.
-    # as these are independent, the variance is additive. 
-    varianceVec=[]
-    for sec in mod.securities
-        push!(varianceVec,sec.tokenCount*periods*var(sec.distribution))
-    end
-    # again variances are addive so 
-    totVar=sum(varianceVec)
-    # this is the variance of the portfolio over all future time periods.
-    # for further normalization, we multiply it by the number of tokens and divide by the number of agents.
-    # but since we are interested in the precision, we take the inverse of the variance.
-
-    return length(mod.agents)/ totVar 
-  
-end
 
 # now we have normalization factors to calculate a utility function 
 # now our goal is to calculate a demand function where the consumption unit is the numeraire.
