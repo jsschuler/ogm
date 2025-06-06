@@ -65,7 +65,7 @@ function expectation(tok::Token)
 end
 # we need to generate utility functions
 function utilGen(mod::Model,agt::Agent)
-
+end
 
 
 
@@ -250,5 +250,5 @@ function report(x::SimToken)
 end
 
 function report(x::Set)
-    return(countmap(report.(collect(x))))
+    return countmap(report.(collect(x)))
 end
