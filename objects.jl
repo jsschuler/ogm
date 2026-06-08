@@ -20,7 +20,7 @@ end
 mutable struct Agent
     idx::Int64
     tokens::Union{Set{Tradeable},Nothing}
-    alpha::Array{Float64}
+    alpha::Array{Float64}  # preference weights (reserved for future use)
 end
 
 mutable struct Model
